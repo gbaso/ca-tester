@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ca-tester
+  namespace: ca-tester
+  labels:
+    app.kubernetes.io/name: ca-tester
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ca-tester
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ca-tester
+    spec:
+      containers:
+        - name: ca-tester
+          image: ghcr.io/gbaso/ca-tester:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MANAGEMENT_METRICS_TAGS_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SERVICE_BINDING_ROOT
+              value: /bindings
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "1024Mi"
+              ephemeral-storage: "10Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+              ephemeral-storage: "100Mi"
+          startupProbe:
+            httpGet:
+              path: "/actuator/health/liveness"
+              port: 8080
+            initialDelaySeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: "/actuator/health/readiness"
+              port: 8080
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet:
+              path: "/actuator/health/liveness"
+              port: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /home/cnb/data
+            - name: mockserver-binding
+              mountPath: /bindings/mockserver
+      volumes:
+        - name: data
+          emptyDir: { }
+        - name: mockserver-binding
+          secret:
+            secretName: mockserver-binding
+      automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ca-tester
+  namespace: ca-tester
+  labels:
+    app.kubernetes.io/name: ca-tester
+spec:
+  selector:
+    app.kubernetes.io/name: ca-tester
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

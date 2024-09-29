@@ -1,0 +1,40 @@
+server:
+  http2:
+    enabled: true
+  servlet:
+    jsp:
+      registered: false
+  compression:
+    enabled: true
+  forward-headers-strategy: framework
+  shutdown: graceful
+
+spring:
+  application:
+    name: ca-tester
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    problemdetails:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - info
+          - health
+          - metrics
+          - loggers
+  endpoint:
+    health:
+      enabled: true
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
